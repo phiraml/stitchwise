@@ -1,0 +1,72 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast, free, and catches most errors. Runs the whole domain layer on Linux.
+  core:
+    name: StitchCore (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: swift-actions/setup-swift@v3
+      - run: swift build
+      - run: swift test
+
+  app:
+    name: App build + UI journey
+    runs-on: macos-26
+    timeout-minutes: 45
+    needs: core
+    strategy:
+      fail-fast: false
+      matrix:
+        device: ["iPhone 17", "iPad (A16)"]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun simctl list devicetypes | grep -Ei "iphone|ipad" || true
+
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen xcbeautify
+          xcodegen generate
+
+      - name: Build and run the UI journey
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Stitchwise.xcodeproj \
+            -scheme Stitchwise \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=latest" \
+            -resultBundlePath "TestResults-${{ matrix.device }}.xcresult" \
+            CODE_SIGNING_ALLOWED=NO | xcbeautify
+
+      - name: Export screenshots and element trees
+        if: always()
+        run: |
+          xcrun xcresulttool export attachments \
+            --path "TestResults-${{ matrix.device }}.xcresult" \
+            --output-path "./ui-artifacts-${{ matrix.device }}" || true
+          xcrun xcresulttool get test-results summary \
+            --path "TestResults-${{ matrix.device }}.xcresult" --compact \
+            > "summary-${{ matrix.device }}.json" || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-artifacts-${{ matrix.device }}
+          path: |
+            ./ui-artifacts-${{ matrix.device }}
+            summary-${{ matrix.device }}.json
