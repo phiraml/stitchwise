@@ -17,13 +17,13 @@ So the product decisions are narrow and deliberate:
 | "It lost my count" | Every counter change is recorded with its previous value. Undo is exact, 250 deep, and survives relaunch. |
 | "Everything vanished after the trial" | Paying unlocks *creating* new things. Nothing you have already made is ever locked or deleted. Pinned by a test. |
 | "Subscription for a row counter" | One non-consumable purchase. Entitlement is read locally, so it works fully offline. |
-| "Basic buggy features" | The domain layer is 48 tests run on every commit, on Linux, in seconds. |
+| "Basic buggy features" | The domain layer is 54 tests run on every commit, on Linux, in seconds. |
 
 ## Layout
 
 ```
 Sources/StitchCore/       Platform-agnostic domain layer — builds and tests on Linux/Windows
-Tests/StitchCoreTests/    48 tests, no simulator required
+Tests/StitchCoreTests/    54 tests, no simulator required
 App/Stitchwise/           SwiftUI app (iOS 17+) — needs macOS to build
 App/StitchwiseUITests/    XCUITest journey; screenshots + element trees per step
 project.yml               XcodeGen manifest; the .xcodeproj is generated, not committed
@@ -51,7 +51,7 @@ gh run download <id> -n "ui-artifacts-iPhone 17" -D ./ci-out
 
 ## Status
 
-- **Verified:** `StitchCore` — 48 tests passing on Swift 6.3.3 (Linux).
+- **Verified:** `StitchCore` — 54 tests passing on Swift 6.3.3 (Linux).
 - **Not yet verified:** the SwiftUI layer, `PurchaseManager`, and the UI journey. None of
   it has been compiled — that requires macOS. The first CI run is the first real check.
 
