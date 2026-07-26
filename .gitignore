@@ -5,3 +5,4 @@ DerivedData/
 *.xcworkspace/
 *.xcresult/
 .DS_Store
+ci-out*/

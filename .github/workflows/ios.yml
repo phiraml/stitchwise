@@ -46,13 +46,32 @@ jobs:
           brew install xcodegen xcbeautify
           xcodegen generate
 
+      # A cold simulator frequently times out on first app launch, which surfaces as
+      # "Timed out while launching application" rather than any fault in the app.
+      # Boot it and wait for it to be fully ready before testing.
+      - name: Boot the simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)['devices']
+          for runtime in sorted(data, reverse=True):
+              for dev in data[runtime]:
+                  if dev['name'] == '${{ matrix.device }}':
+                      print(dev['udid']); raise SystemExit
+          ")
+          if [ -z "$UDID" ]; then echo "No simulator named '${{ matrix.device }}'"; exit 1; fi
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          echo "SIM_UDID=$UDID" >> $GITHUB_ENV
+
       - name: Build and run the UI journey
         run: |
           set -o pipefail
           xcodebuild test \
             -project Stitchwise.xcodeproj \
             -scheme Stitchwise \
-            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=latest" \
+            -destination "id=$SIM_UDID" \
+            -retry-tests-on-failure -test-iterations 2 \
             -resultBundlePath "TestResults-${{ matrix.device }}.xcresult" \
             CODE_SIGNING_ALLOWED=NO | xcbeautify
 

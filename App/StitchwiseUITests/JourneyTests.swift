@@ -5,6 +5,9 @@ import XCTest
 ///
 /// Elements are addressed by accessibility identifier, never by coordinate, so the same
 /// journey runs unchanged across the device matrix in CI.
+/// `@MainActor` because XCUIElement is main-actor isolated under Swift 6; without it,
+/// touching `.exists` from a test method is a warning today and an error tomorrow.
+@MainActor
 final class JourneyTests: XCTestCase {
 
     private var app: XCUIApplication!
