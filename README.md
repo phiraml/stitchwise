@@ -51,9 +51,21 @@ gh run download <id> -n "ui-artifacts-iPhone 17" -D ./ci-out
 
 ## Status
 
-- **Verified:** `StitchCore` — 54 tests passing on Swift 6.3.3 (Linux).
-- **Not yet verified:** the SwiftUI layer, `PurchaseManager`, and the UI journey. None of
-  it has been compiled — that requires macOS. The first CI run is the first real check.
+Verified in CI (run 30190164327, all green):
+
+- `StitchCore` — 54 tests on Swift 6.3 (Linux container).
+- App builds for iOS Simulator and the UI journey passes on **iPhone 17** and **iPad (A16)**:
+  create a project, count ten rows, assert the counter reads 11, undo three times, assert 8,
+  relaunch and assert the count survived.
+
+Known gaps:
+
+- **iPad layout is poor.** It passes, but the counter is lost in dead space and the Undo
+  control stretches the full width. Needs a size-class-aware layout.
+- `PurchaseManager` compiles but no purchase has been exercised — that needs a StoreKit
+  configuration file or a sandbox account.
+- PDF annotation is untested end to end; the domain layer is covered but no PDF has been
+  imported and highlighted in a real run.
 
 ## Domain notes
 
