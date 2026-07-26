@@ -20,6 +20,9 @@ targets:
         product: StitchCore
     settings:
       base:
+        # Without this, the INFOPLIST_KEY_* settings below generate nothing and the build
+        # fails looking for Stitchwise.app/Info.plist.
+        GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.stitchwise.app
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -40,6 +43,12 @@ targets:
       - path: App/StitchwiseUITests
     dependencies:
       - target: Stitchwise
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.stitchwise.uitests
+        SWIFT_VERSION: "6.0"
+        TEST_TARGET_NAME: Stitchwise
 
 schemes:
   Stitchwise:
