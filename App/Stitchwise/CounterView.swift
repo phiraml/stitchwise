@@ -1,4 +1,6 @@
 import SwiftUI
+import PDFKit
+import UniformTypeIdentifiers
 import StitchCore
 #if canImport(UIKit)
 import UIKit
@@ -17,6 +19,7 @@ struct CounterView: View {
     @Environment(AppState.self) private var state
     @State private var showingPattern = false
     @State private var showingAddCounter = false
+    @State private var showingImporter = false
     @State private var newCounterName = ""
 
     private var project: Project? {
@@ -44,6 +47,13 @@ struct CounterView: View {
                         Button("Open pattern", systemImage: "doc.richtext") {
                             showingPattern = true
                         }
+                        Button("Remove pattern", systemImage: "doc.badge.ellipsis", role: .destructive) {
+                            state.removePattern(from: projectID)
+                        }
+                    } else {
+                        Button("Import pattern PDF", systemImage: "square.and.arrow.down") {
+                            showingImporter = true
+                        }
                     }
                     Button("Reset all counters", systemImage: "arrow.counterclockwise", role: .destructive) {
                         state.apply(.resetAll, to: projectID)
@@ -55,6 +65,13 @@ struct CounterView: View {
             }
         }
         .sheet(isPresented: $showingAddCounter) { addCounterSheet }
+        .fileImporter(
+            isPresented: $showingImporter,
+            allowedContentTypes: [.pdf],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImport(result)
+        }
         .sheet(isPresented: $showingPattern) {
             if let project, project.pattern != nil {
                 PatternView(projectID: project.id)
@@ -190,6 +207,23 @@ struct CounterView: View {
             SessionButton(project: project, projectID: projectID)
         }
         .padding()
+    }
+
+    /// Files hands back a security-scoped URL that stops working shortly after. Read the
+    /// page count and hand it to the importer while access is still held; the importer
+    /// copies the file into app storage so nothing depends on this URL afterwards.
+    private func handleImport(_ result: Result<[URL], Error>) {
+        guard case .success(let urls) = result, let url = urls.first else { return }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+
+        let pageCount = PDFDocument(url: url)?.pageCount ?? 1
+        state.importPattern(
+            from: url,
+            displayName: url.deletingPathExtension().lastPathComponent,
+            pageCount: pageCount,
+            into: projectID
+        )
     }
 
     private func increment() {

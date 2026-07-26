@@ -121,6 +121,41 @@ final class AppState {
         persist()
     }
 
+    // MARK: - Patterns
+
+    private static var patternsDirectory: URL {
+        URL.documentsDirectory.appendingPathComponent("Stitchwise/Patterns", isDirectory: true)
+    }
+
+    var patternImporter: PatternImporter {
+        PatternImporter(directory: Self.patternsDirectory)
+    }
+
+    /// Copies the PDF into app storage and attaches it to the project.
+    /// `pageCount` comes from the caller because PDFKit lives in the app layer.
+    func importPattern(from url: URL, displayName: String, pageCount: Int, into projectID: UUID) {
+        guard let idx = projects.firstIndex(where: { $0.id == projectID }) else { return }
+        do {
+            let ref = try patternImporter.import(
+                from: url, displayName: displayName, pageCount: pageCount
+            )
+            // Replacing an existing pattern should not orphan the old file.
+            if let old = projects[idx].pattern { patternImporter.delete(old) }
+            projects[idx].pattern = ref
+            persist()
+        } catch {
+            lastError = "Could not import that pattern: \(error)"
+        }
+    }
+
+    func removePattern(from projectID: UUID) {
+        guard let idx = projects.firstIndex(where: { $0.id == projectID }),
+              let pattern = projects[idx].pattern else { return }
+        patternImporter.delete(pattern)
+        projects[idx].pattern = nil
+        persist()
+    }
+
     // MARK: - Entitlement
 
     func setEntitlement(_ entitlement: Entitlement) {
