@@ -26,7 +26,14 @@ final class PurchaseManager {
         listenForTransactions()
     }
 
-    deinit { updatesTask?.cancel() }
+    /// Deliberately no `deinit` cancellation. Under Swift 6, `deinit` is nonisolated and
+    /// cannot touch main-actor state, so `updatesTask?.cancel()` there does not compile.
+    /// This object lives for the lifetime of the app and the task captures `self` weakly,
+    /// so nothing leaks; `stop()` exists for tests and previews that need to tear it down.
+    func stop() {
+        updatesTask?.cancel()
+        updatesTask = nil
+    }
 
     private func loadProduct() async {
         do {
